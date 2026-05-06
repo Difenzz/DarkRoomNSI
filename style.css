@@ -33,7 +33,9 @@ body {
     padding: 20px;
     gap: 20px;
     box-sizing: border-box;
+    transition: all 0.3s ease; /* Pour une transition fluide */
 }
+
 
 /* Login */
 .login-overlay {
@@ -83,9 +85,37 @@ body {
     display: none;
 }
 
+.password-container {
+    position: relative;
+    width: 100%;
+    margin-bottom: 15px;
+}
+
+.password-container input {
+    margin-bottom: 0 !important; /* On enlève la marge ici car c'est le container qui la gère */
+    padding-right: 40px; /* On laisse de la place pour l'œil */
+}
+
+.toggle-eye {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    font-size: 1.2rem;
+    user-select: none;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+
+.toggle-eye:hover {
+    opacity: 1;
+}
+
 /* Chat */
 .chat-container {
-    flex: 0 0 400px;
+    flex: 0 0 400px; /* Largeur fixe sur PC */
+    min-height: 0;   /* Important pour le scroll interne */
     background-color: var(--panel-dark);
     border: 1px solid var(--border);
     border-radius: 12px;
@@ -300,3 +330,84 @@ body {
 .history-item:last-child { border-bottom: none; }
 .history-item strong { color: var(--accent-blue); font-size: 0.9rem; font-weight: 600; }
 .history-item span { color: var(--text-muted); font-size: 0.75rem; font-family: 'Consolas', monospace; }
+
+
+
+/* --- RESPONSIVE DESIGN --- */
+
+/* Pour les tablettes et petits écrans PC (sous 1024px) */
+@media (max-width: 1024px) {
+    .chat-container {
+        flex: 0 0 320px; /* On réduit un peu le chat */
+    }
+}
+
+/* Pour les mobiles (sous 768px) */
+@media (max-width: 768px) {
+    body {
+        overflow: auto; /* On permet le scroll global sur mobile */
+    }
+
+    .main-wrapper {
+        flex-direction: column; /* On empile le chat et l'éditeur */
+        height: auto;
+        padding: 10px;
+        gap: 15px;
+    }
+
+    .chat-container {
+        flex: none;
+        width: 100%;
+        height: 500px; /* Hauteur fixe pour le chat sur mobile */
+    }
+
+    .editor-container {
+        flex: none;
+        width: 100%;
+        height: 600px; /* Hauteur pour l'éditeur */
+    }
+
+    /* On adapte la boîte de login */
+    .login-box {
+        width: 90%;
+        padding: 25px;
+    }
+
+    /* On réduit la taille de la police de l'éditeur pour mobile */
+    #codeEditor {
+        font-size: 13px;
+        padding: 15px;
+    }
+
+    /* Header de l'éditeur plus compact */
+    .editor-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .file-actions {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+    }
+    
+    .btn-confirm, .btn-secondary {
+        flex: 1;
+        text-align: center;
+        font-size: 0.8rem;
+        padding: 8px 5px;
+    }
+}
+
+/* Très petits écrans (iPhone SE, etc.) */
+@media (max-width: 400px) {
+    .chat-header h2 {
+        font-size: 0.9rem;
+    }
+    
+    .status-dot {
+        display: none; /* On gagne de la place */
+    }
+}
+
