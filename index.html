@@ -5,8 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DarkRoom NSI</title>
     <link rel="stylesheet" href="style.css">
+    <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <!-- PDF et Coloration -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
 </head>
 <body>
 
@@ -30,20 +34,15 @@
                 <h2 class="chat-title">DarkRoom Chat</h2>
                 <p id="user-display" class="user-subtitle">Utilisateur : ...</p>
             </div>
-            
-            <!-- Bouton Membres avec menu au survol -->
             <div class="members-dropdown">
                 <button class="btn-secondary">Membres</button>
                 <div class="dropdown-content">
                     <div id="usersList" class="users-list"></div>
                 </div>
             </div>
-
             <button id="logoutBtn" class="btn-logout">Quitter</button>
         </div>
-
         <div class="messages-area" id="chatBox"></div>
-
         <form class="input-area" id="chatForm">
             <input type="text" id="userInput" placeholder="Message..." autocomplete="off">
             <button type="submit">Envoyer</button>
@@ -64,6 +63,8 @@
             </div>
         </div>
         <textarea id="codeEditor" spellcheck="false" placeholder="Code collaboratif..."></textarea>
+        <!-- Panneau historique indispensable -->
+        <div id="history-panel"></div>
     </section>
 </div>
 
