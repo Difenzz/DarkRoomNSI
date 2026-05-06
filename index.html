@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DarkRoom NSI</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+
+<div id="login-screen" class="login-overlay">
+    <div class="login-box">
+        <div class="status-dot status-dot-centered"></div>
+        <h2>Login</h2>
+        <br>
+        <input type="text" id="loginId" placeholder="Identifiant" autocomplete="off">
+        <input type="password" id="loginPwd" placeholder="Mot de passe">
+        <button id="loginBtn">Se connecter</button>
+        <p id="loginError" class="error-msg">Identifiants incorrects</p>
+    </div>
+</div>
+
+<div class="main-wrapper" id="app-content" style="display: none;">
+    <section class="chat-container">
+        <div class="chat-header">
+            <div class="status-dot"></div>
+            <div class="chat-info">
+                <h2 class="chat-title">DarkRoom Chat</h2>
+                <p id="user-display" class="user-subtitle">Utilisateur : ...</p>
+            </div>
+            
+            <!-- Bouton Membres avec menu au survol -->
+            <div class="members-dropdown">
+                <button class="btn-secondary">Membres</button>
+                <div class="dropdown-content">
+                    <div id="usersList" class="users-list"></div>
+                </div>
+            </div>
+
+            <button id="logoutBtn" class="btn-logout">Quitter</button>
+        </div>
+
+        <div class="messages-area" id="chatBox"></div>
+
+        <form class="input-area" id="chatForm">
+            <input type="text" id="userInput" placeholder="Message..." autocomplete="off">
+            <button type="submit">Envoyer</button>
+        </form>
+    </section>
+
+    <section class="editor-container">
+        <div class="editor-header">
+            <div class="editor-info">
+                <h3 class="editor-title">Python Workspace</h3>
+                <p id="last-editor" class="editor-subtitle">Chargement...</p>
+            </div>
+            <div class="file-actions">
+                <button id="saveBtn" class="btn-confirm">Confirmer</button>
+                <button id="historyBtn" class="btn-secondary">Historique</button>
+                <label for="fileInput" class="btn-secondary">Importer .py</label>
+                <input type="file" id="fileInput" accept=".py,.txt,.js" hidden>
+            </div>
+        </div>
+        <textarea id="codeEditor" spellcheck="false" placeholder="Code collaboratif..."></textarea>
+    </section>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
