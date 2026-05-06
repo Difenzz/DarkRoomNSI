@@ -8,24 +8,46 @@ const firebaseConfig = {
     measurementId: "G-VWZKW4KNQ1"
 };
 
+// Initialisation Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 let currentUsername = null;
 let currentUserDocId = null;
 
+// --- FONCTION NOTIFICATION (TOAST) ---
+
+function afficherNotification(message) {
+    const toast = document.createElement('div');
+    toast.style.position = 'fixed';
+    toast.style.bottom = '20px';
+    toast.style.right = '20px';
+    toast.style.backgroundColor = '#4caf50';
+    toast.style.color = 'white';
+    toast.style.padding = '10px 20px';
+    toast.style.borderRadius = '5px';
+    toast.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)';
+    toast.style.zIndex = '10000';
+    toast.innerText = message;
+    
+    document.body.appendChild(toast);
+    setTimeout(() => { toast.remove(); }, 3000);
+}
+
 // --- AUTHENTIFICATION ---
+
 async function tenterConnexion() {
-    const id = document.getElementById('loginId').value.trim();
-    const mdp = document.getElementById('loginPwd').value.trim();
+    const idField = document.getElementById('loginId');
+    const pwdField = document.getElementById('loginPwd');
+    const id = idField.value.trim();
+    const mdp = pwdField.value.trim();
 
     try {
         const query = await db.collection("users").where("id", "==", id).where("Mdp", "==", mdp).get();
         if (!query.empty) {
             currentUsername = id;
             currentUserDocId = query.docs[0].id;
-
-            // Passage en ligne[cite: 2]
+            
             await db.collection("users").doc(currentUserDocId).update({ isOnline: true });
 
             document.getElementById('login-screen').style.display = 'none';
@@ -38,30 +60,29 @@ async function tenterConnexion() {
         } else {
             document.getElementById('loginError').style.display = 'block';
         }
-    } catch (e) { console.error("Erreur de connexion:", e); }
+    } catch (e) { 
+        console.error("Erreur de connexion:", e); 
+    }
 }
 
 document.getElementById('loginBtn').addEventListener('click', tenterConnexion);
+
 [document.getElementById('loginId'), document.getElementById('loginPwd')].forEach(input => {
-    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') tenterConnexion(); });
+    input.addEventListener('keydown', (e) => { 
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            tenterConnexion(); 
+        }
+    });
 });
 
-// Déconnexion manuelle
 document.getElementById('logoutBtn').addEventListener('click', async () => {
-    if (currentUserDocId) {
-        await db.collection("users").doc(currentUserDocId).update({ isOnline: false });
-    }
+    if (currentUserDocId) await db.collection("users").doc(currentUserDocId).update({ isOnline: false });
     window.location.reload();
 });
 
-// Détection fermeture d'onglet pour le statut "Hors-ligne"
-window.addEventListener('beforeunload', () => {
-    if (currentUserDocId) {
-        db.collection("users").doc(currentUserDocId).update({ isOnline: false });
-    }
-});
-
 // --- PRÉSENCE ---
+
 function initUsersPresence() {
     const usersList = document.getElementById('usersList');
     db.collection("users").onSnapshot(snap => {
@@ -70,16 +91,14 @@ function initUsersPresence() {
             const user = doc.data();
             const div = document.createElement('div');
             div.className = 'user-item';
-            div.innerHTML = `
-                <div class="status-indicator ${user.isOnline ? 'online' : 'offline'}"></div>
-                <span>${user.id}</span>
-            `;
+            div.innerHTML = `<div class="status-indicator ${user.isOnline ? 'online' : 'offline'}"></div><span>${user.id}</span>`;
             usersList.appendChild(div);
         });
     });
 }
 
-// --- CHAT + COMMANDE /CLEAR GLOBAL ---
+// --- CHAT ---
+
 function initChat() {
     const chatBox = document.getElementById('chatBox');
     const chatForm = document.getElementById('chatForm');
@@ -90,17 +109,13 @@ function initChat() {
         const txt = userInput.value.trim();
         if (!txt) return;
 
-        // Commande /clear : Messages + Historique Code[cite: 2]
         if (txt === '/clear') {
-            if (confirm("Supprimer définitivement TOUS les messages et l'historique du code ?")) {
+            if (confirm("Supprimer l'historique complet ?")) {
                 const batch = db.batch();
-                
                 const msgSnap = await db.collection("messages").get();
                 msgSnap.docs.forEach(doc => batch.delete(doc.ref));
-
                 const histSnap = await db.collection("history").get();
                 histSnap.docs.forEach(doc => batch.delete(doc.ref));
-
                 await batch.commit();
             }
             userInput.value = "";
@@ -120,83 +135,155 @@ function initChat() {
         snap.forEach(doc => {
             const m = doc.data();
             const div = document.createElement('div');
+            
             let colorClass = m.sender === currentUsername ? 'sent' : 'received';
-            if (m.sender === "Ghost") colorClass += " color-ghost";
-            else if (m.sender === "Chicky7") colorClass += " color-chicky";
-            else if (m.sender === "Dev") colorClass += " color-dev";
+            let displayName = m.sender;
 
+            if (m.sender === "Ghost") {
+                colorClass += " color-ghost";
+                displayName = "Lorenzo";
+            } else if (m.sender === "Chicky7") {
+                colorClass += " color-chicky";
+                displayName = "Sabry";
+            } else if (m.sender === "Dev") {
+                colorClass += " color-dev";
+                displayName = "Enzo";
+            }
+            
             div.className = `message ${colorClass}`;
             const time = m.createdAt ? new Date(m.createdAt.toDate()).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '...';
-            
-            div.innerHTML = `
-                <div class="message-info">
-                    <span class="user-name">${m.sender}</span>
-                    <span class="message-time">${time}</span>
-                </div>
-                <div class="message-text">${m.text}</div>
-            `;
+            div.innerHTML = `<div class="message-info"><b>${displayName}</b> <span>${time}</span></div><div class="message-text">${m.text}</div>`;
             chatBox.appendChild(div);
         });
         chatBox.scrollTop = chatBox.scrollHeight;
     });
 }
 
-// --- ÉDITEUR COLLABORATIF ---
+// --- ÉDITEUR & PDF ---
+
 function initCollaborativeEditor() {
     const codeEditor = document.getElementById('codeEditor');
-    const lastEditorLabel = document.getElementById('last-editor');
     const saveBtn = document.getElementById('saveBtn');
     const historyBtn = document.getElementById('historyBtn');
-    const codeRef = db.collection("workspace").doc("shared_code");
     const historyPanel = document.getElementById('history-panel');
+    const fileInput = document.getElementById('fileInput');
+    const codeRef = db.collection("workspace").doc("shared_code");
+
+    fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            codeEditor.value = ev.target.result;
+            afficherNotification("Fichier importé avec succès !");
+        };
+        reader.readAsText(file);
+    });
+
+    function telechargerPDF(contenu, auteurRaw, dateLabel) {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        const pageWidth = doc.internal.pageSize.getWidth();
+
+        let auteurReel = auteurRaw;
+        if (auteurRaw === "Ghost") auteurReel = "Lorenzo";
+        else if (auteurRaw === "Chicky7") auteurReel = "Sabry";
+        else if (auteurRaw === "Dev") auteurReel = "Enzo";
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(30);
+        doc.text("Exportation Fichier Python", pageWidth / 2, 30, { align: "center" });
+
+        doc.setFontSize(25);
+        doc.text(dateLabel, pageWidth / 2, 45, { align: "center" });
+
+        doc.setFontSize(20);
+        doc.setFont("helvetica", "italic");
+        doc.text(`Par : ${auteurReel}`, pageWidth / 2, 58, { align: "center" });
+
+        doc.setLineWidth(1);
+        doc.line(20, 65, 190, 65);
+
+        doc.setFont("courier", "normal");
+        doc.setFontSize(18);
+        const splitText = doc.splitTextToSize(contenu, 170);
+        doc.text(splitText, 20, 80);
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(10);
+        doc.setTextColor(150);
+        doc.text("Made for Cheat by Enzo.P", pageWidth / 2, 285, { align: "center" });
+
+        const maintenant = new Date();
+        const datePropre = maintenant.toLocaleDateString('fr-FR').replace(/\//g, '-');
+        const heurePropre = maintenant.getHours() + "h" + maintenant.getMinutes().toString().padStart(2, '0');
+        const nomFichier = `Récapitulatif sauvegarde du ${datePropre} à ${heurePropre}.pdf`;
+
+        doc.save(nomFichier);
+        afficherNotification("PDF généré !");
+    }
+
+    async function chargerHistorique() {
+        historyPanel.innerHTML = "<h4>Historique des sauvegardes</h4>";
+        const snap = await db.collection("history").orderBy("updatedAt", "desc").limit(10).get();
+        if (snap.empty) {
+            historyPanel.innerHTML += "<p style='font-size:0.8rem; color:gray; padding:10px;'>Vide.</p>";
+            return;
+        }
+        snap.forEach(doc => {
+            const data = doc.data();
+            const d = data.updatedAt ? data.updatedAt.toDate() : new Date();
+            const dateStr = d.toLocaleDateString('fr-FR');
+            const heureStr = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+            
+            let displayAuteur = data.lastBy;
+            if (data.lastBy === "Ghost") displayAuteur = "Lorenzo";
+            else if (data.lastBy === "Chicky7") displayAuteur = "Sabry";
+            else if (data.lastBy === "Dev") displayAuteur = "Enzo";
+
+            const item = document.createElement('div');
+            item.className = "history-item";
+            item.innerHTML = `
+                <div style="flex:1; cursor:pointer;" class="restore">
+                    <strong>${displayAuteur}</strong><br>
+                    <small>${dateStr} à ${heureStr}</small>
+                </div>
+                <button class="btn-pdf">📄 PDF</button>
+            `;
+            item.querySelector('.restore').onclick = () => { 
+                if(confirm("Restaurer ?")) {
+                    codeEditor.value = data.content;
+                    afficherNotification("Code restauré !");
+                }
+            };
+            item.querySelector('.btn-pdf').onclick = () => telechargerPDF(data.content, data.lastBy, `${dateStr} à ${heureStr}`);
+            historyPanel.appendChild(item);
+        });
+    }
 
     codeRef.onSnapshot(doc => {
         if (doc.exists && document.activeElement !== codeEditor) {
-            const data = doc.data();
-            codeEditor.value = data.content;
-            lastEditorLabel.innerText = "Dernière modification par : " + data.lastBy;
+            codeEditor.value = doc.data().content;
+            let lastAuteur = doc.data().lastBy;
+            if (lastAuteur === "Ghost") lastAuteur = "Lorenzo";
+            else if (lastAuteur === "Chicky7") lastAuteur = "Sabry";
+            else if (lastAuteur === "Dev") lastAuteur = "Enzo";
+            document.getElementById('last-editor').innerText = "Modifié par : " + lastAuteur;
         }
     });
 
     saveBtn.addEventListener('click', async () => {
-        const content = codeEditor.value;
-        const payload = { 
-            content, 
-            lastBy: currentUsername, 
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp() 
-        };
+        const payload = { content: codeEditor.value, lastBy: currentUsername, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
         await codeRef.set(payload);
         await db.collection("history").add(payload);
         saveBtn.innerText = "✅";
+        afficherNotification("Sauvegarde réussie !");
         setTimeout(() => saveBtn.innerText = "Confirmer", 2000);
     });
 
-    historyBtn.addEventListener('click', async () => {
+    historyBtn.addEventListener('click', () => {
         const isVisible = historyPanel.style.display === 'block';
         historyPanel.style.display = isVisible ? 'none' : 'block';
-        
-        if (!isVisible) {
-            historyPanel.innerHTML = "<h4>Dernières sauvegardes</h4>";
-            const snap = await db.collection("history").orderBy("updatedAt", "desc").limit(10).get();
-            if (snap.empty) {
-                historyPanel.innerHTML += "<p style='padding:15px; font-size:0.8rem; color:gray;'>Aucun historique.</p>";
-            }
-            snap.forEach(doc => {
-                const data = doc.data();
-                const item = document.createElement('div');
-                item.className = "history-item";
-                item.innerHTML = `<strong>${data.lastBy}</strong> <span>${data.updatedAt ? new Date(data.updatedAt.toDate()).toLocaleTimeString() : '...'}</span>`;
-                item.onclick = () => { if(confirm("Restaurer cette version ?")) codeEditor.value = data.content; };
-                historyPanel.appendChild(item);
-            });
-        }
-    });
-
-    document.getElementById('fileInput').addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (e) => { codeEditor.value = e.target.result; };
-        reader.readAsText(file);
+        if (!isVisible) chargerHistorique();
     });
 }
