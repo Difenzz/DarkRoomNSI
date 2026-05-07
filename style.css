@@ -33,7 +33,7 @@ body {
     padding: 20px;
     gap: 20px;
     box-sizing: border-box;
-    transition: all 0.3s ease; /* Pour une transition fluide */
+    transition: all 0.3s ease;
 }
 
 
@@ -92,8 +92,8 @@ body {
 }
 
 .password-container input {
-    margin-bottom: 0 !important; /* On enlève la marge ici car c'est le container qui la gère */
-    padding-right: 40px; /* On laisse de la place pour l'œil */
+    margin-bottom: 0 !important;
+    padding-right: 40px;
 }
 
 .toggle-eye {
@@ -114,8 +114,8 @@ body {
 
 /* Chat */
 .chat-container {
-    flex: 0 0 400px; /* Largeur fixe sur PC */
-    min-height: 0;   /* Important pour le scroll interne */
+    flex: 0 0 400px;
+    min-height: 0;
     background-color: var(--panel-dark);
     border: 1px solid var(--border);
     border-radius: 12px;
@@ -144,7 +144,6 @@ body {
     background: #0a0a0b; 
 }
 
-/* Bulles de messages */
 .message { 
     max-width: 85%; 
     padding: 10px 15px; 
@@ -174,7 +173,6 @@ body {
 .sent { align-self: flex-end; background: var(--msg-user); color: white; }
 .received { align-self: flex-start; background: var(--msg-other); border: 1px solid var(--border); }
 
-/* Couleurs spécifiques par utilisateur */
 .color-ghost { background-color: #3f3f46 !important; border-color: #52525b !important; color: #f4f4f5; }
 .color-chicky { background-color: #854d0e !important; border-color: #a16207 !important; color: #fefce8; }
 .color-dev { background-color: #5b21b6 !important; border-color: #6d28d9 !important; color: #f5f3ff; }
@@ -183,7 +181,6 @@ body {
 .input-area input { flex: 1; background: #26262b; border: 1px solid var(--border); border-radius: 6px; padding: 10px; color: white; outline: none; }
 .input-area button { background: var(--accent-blue); color: white; border: none; padding: 0 15px; border-radius: 6px; cursor: pointer; font-weight: bold; }
 
-/* Nouveau : Dropdown Utilisateurs au survol */
 .members-dropdown {
     position: relative;
     display: inline-block;
@@ -203,7 +200,6 @@ body {
     margin-top: 10px;
 }
 
-/* Affichage au survol */
 .members-dropdown:hover .dropdown-content {
     display: block;
 }
@@ -250,18 +246,12 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    flex-wrap: nowrap;
 }
 
 .file-actions {
     display: flex;
     gap: 10px;
     align-items: center;
-}
-
-.file-actions button, .file-actions label {
-    white-space: nowrap;
-    flex-shrink: 0;
 }
 
 #codeEditor {
@@ -290,12 +280,12 @@ body {
     cursor: pointer;
 }
 
-/* Historique */
+/* Historique (MODIFIÉ) */
 #history-panel {
     position: absolute;
     top: 75px;
     right: 25px;
-    width: 300px;
+    width: 320px;
     background-color: var(--panel-dark);
     border: 1px solid var(--border);
     border-radius: 8px;
@@ -312,7 +302,6 @@ body {
     padding: 15px;
     color: var(--text-muted);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
     border-bottom: 1px solid var(--border);
 }
 
@@ -322,92 +311,55 @@ body {
     align-items: center;
     padding: 12px 15px;
     border-bottom: 1px solid #232326;
-    cursor: pointer;
     transition: background 0.2s ease;
 }
 
 .history-item:hover { background-color: #2a2a2d; }
-.history-item:last-child { border-bottom: none; }
-.history-item strong { color: var(--accent-blue); font-size: 0.9rem; font-weight: 600; }
-.history-item span { color: var(--text-muted); font-size: 0.75rem; font-family: 'Consolas', monospace; }
 
+.history-item strong { color: var(--accent-blue); font-size: 0.9rem; }
 
+/* Actions dans l'historique (Suppression + PDF) */
+.history-actions {
+    display: flex;
+    gap: 5px;
+}
+
+.btn-delete {
+    background: transparent;
+    border: 1px solid #442222;
+    color: #ef4444;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-delete:hover {
+    background: #ef4444;
+    color: white;
+}
+
+.btn-pdf {
+    background: #2d2d30;
+    border: none;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+}
 
 /* --- RESPONSIVE DESIGN --- */
 
-/* Pour les tablettes et petits écrans PC (sous 1024px) */
 @media (max-width: 1024px) {
-    .chat-container {
-        flex: 0 0 320px; /* On réduit un peu le chat */
-    }
+    .chat-container { flex: 0 0 320px; }
 }
 
-/* Pour les mobiles (sous 768px) */
 @media (max-width: 768px) {
-    body {
-        overflow: auto; /* On permet le scroll global sur mobile */
-    }
-
-    .main-wrapper {
-        flex-direction: column; /* On empile le chat et l'éditeur */
-        height: auto;
-        padding: 10px;
-        gap: 15px;
-    }
-
-    .chat-container {
-        flex: none;
-        width: 100%;
-        height: 500px; /* Hauteur fixe pour le chat sur mobile */
-    }
-
-    .editor-container {
-        flex: none;
-        width: 100%;
-        height: 600px; /* Hauteur pour l'éditeur */
-    }
-
-    /* On adapte la boîte de login */
-    .login-box {
-        width: 90%;
-        padding: 25px;
-    }
-
-    /* On réduit la taille de la police de l'éditeur pour mobile */
-    #codeEditor {
-        font-size: 13px;
-        padding: 15px;
-    }
-
-    /* Header de l'éditeur plus compact */
-    .editor-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
-    }
-
-    .file-actions {
-        width: 100%;
-        display: flex;
-        justify-content: space-between;
-    }
-    
-    .btn-confirm, .btn-secondary {
-        flex: 1;
-        text-align: center;
-        font-size: 0.8rem;
-        padding: 8px 5px;
-    }
+    body { overflow: auto; }
+    .main-wrapper { flex-direction: column; height: auto; padding: 10px; gap: 15px; }
+    .chat-container { width: 100%; height: 500px; }
+    .editor-container { width: 100%; height: 600px; }
+    .login-box { width: 90%; }
+    .editor-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+    .file-actions { width: 100%; justify-content: space-between; }
 }
-
-/* Très petits écrans (iPhone SE, etc.) */
-@media (max-width: 400px) {
-    .chat-header h2 {
-        font-size: 0.9rem;
-    }
-    
-    .status-dot {
-        display: none; /* On gagne de la place */
-    }
-}
-
