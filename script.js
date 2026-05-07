@@ -16,14 +16,13 @@ let currentUsername = null;
 let currentUserDocId = null;
 
 // --- FONCTION NOTIFICATION (TOAST) ---
-
 function afficherNotification(message) {
     const toast = document.createElement('div');
     toast.style.position = 'fixed';
     toast.style.bottom = '20px';
     toast.style.right = '20px';
-    toast.style.backgroundColor = '#4caf50';
-    toast.style.color = 'white';
+    toast.style.backgroundColor = '#78c1df';
+    toast.style.color = 'black';
     toast.style.padding = '10px 20px';
     toast.style.borderRadius = '5px';
     toast.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)';
@@ -34,8 +33,7 @@ function afficherNotification(message) {
     setTimeout(() => { toast.remove(); }, 3000);
 }
 
-// --- AUTHENTIFICATION ---
-
+// --- GESTION CONNEXION ---
 async function tenterConnexion() {
     const idField = document.getElementById('loginId');
     const pwdField = document.getElementById('loginPwd');
@@ -81,8 +79,7 @@ document.getElementById('logoutBtn').addEventListener('click', async () => {
     window.location.reload();
 });
 
-// --- PRÉSENCE ---
-
+// --- PRÉSENCE UTILISATEURS ---
 function initUsersPresence() {
     const usersList = document.getElementById('usersList');
     db.collection("users").onSnapshot(snap => {
@@ -97,8 +94,7 @@ function initUsersPresence() {
     });
 }
 
-// --- CHAT ---
-
+// --- GESTION DU CHAT ---
 function initChat() {
     const chatBox = document.getElementById('chatBox');
     const chatForm = document.getElementById('chatForm');
@@ -109,6 +105,7 @@ function initChat() {
         const txt = userInput.value.trim();
         if (!txt) return;
 
+        // Commande spéciale pour vider le chat
         if (txt === '/clear') {
             if (confirm("Supprimer l'historique complet ?")) {
                 const batch = db.batch();
@@ -159,8 +156,7 @@ function initChat() {
     });
 }
 
-// --- ÉDITEUR & PDF ---
-
+// --- ÉDITEUR COLLABORATIF ET PDF ---
 function initCollaborativeEditor() {
     const codeEditor = document.getElementById('codeEditor');
     const saveBtn = document.getElementById('saveBtn');
@@ -180,39 +176,70 @@ function initCollaborativeEditor() {
         reader.readAsText(file);
     });
 
+    // Suppression sans confirmation
+    async function supprimerSauvegarde(docId, itemElement) {
+        try {
+            await db.collection("history").doc(docId).delete();
+            itemElement.remove();
+            afficherNotification("Sauvegarde supprimée !");
+        } catch (e) {
+            console.error("Erreur suppression:", e);
+            afficherNotification("Erreur lors de la suppression.");
+        }
+    }
+
     function telechargerPDF(contenu, auteurRaw, dateLabel) {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
         const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
 
         let auteurReel = auteurRaw;
         if (auteurRaw === "Ghost") auteurReel = "Lorenzo";
         else if (auteurRaw === "Chicky7") auteurReel = "Sabry";
         else if (auteurRaw === "Dev") auteurReel = "Enzo";
 
+        // Fonction pour dessiner le bas de page et forcer la police du code
+        const dessinerFooterEtResetPolice = () => {
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(10);
+            doc.setTextColor(150);
+            doc.text("Made for Cheat by Enzo.P", pageWidth / 2, pageHeight - 10, { align: "center" });
+            doc.setTextColor(0);
+            // On remet la police Courier pour le code immédiatement
+            doc.setFont("courier", "normal");
+            doc.setFontSize(13);
+        };
+
+        // Page 1 - Header
         doc.setFont("helvetica", "bold");
         doc.setFontSize(30);
         doc.text("Exportation Fichier Python", pageWidth / 2, 30, { align: "center" });
-
         doc.setFontSize(25);
         doc.text(dateLabel, pageWidth / 2, 45, { align: "center" });
-
         doc.setFontSize(20);
         doc.setFont("helvetica", "italic");
         doc.text(`Par : ${auteurReel}`, pageWidth / 2, 58, { align: "center" });
-
         doc.setLineWidth(1);
         doc.line(20, 65, 190, 65);
+        
+        dessinerFooterEtResetPolice();
 
-        doc.setFont("courier", "normal");
-        doc.setFontSize(18);
+        // Corps du code
+        const margin = 20;
+        let y = 80;
+        const lineHeight = 6; 
         const splitText = doc.splitTextToSize(contenu, 170);
-        doc.text(splitText, 20, 80);
 
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(10);
-        doc.setTextColor(150);
-        doc.text("Made for Cheat by Enzo.P", pageWidth / 2, 285, { align: "center" });
+        for (let i = 0; i < splitText.length; i++) {
+            if (y > pageHeight - 25) {
+                doc.addPage();
+                dessinerFooterEtResetPolice();
+                y = margin; 
+            }
+            doc.text(splitText[i], margin, y);
+            y += lineHeight;
+        }
 
         const maintenant = new Date();
         const datePropre = maintenant.toLocaleDateString('fr-FR').replace(/\//g, '-');
@@ -232,6 +259,7 @@ function initCollaborativeEditor() {
         }
         snap.forEach(doc => {
             const data = doc.data();
+            const docId = doc.id;
             const d = data.updatedAt ? data.updatedAt.toDate() : new Date();
             const dateStr = d.toLocaleDateString('fr-FR');
             const heureStr = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
@@ -248,15 +276,25 @@ function initCollaborativeEditor() {
                     <strong>${displayAuteur}</strong><br>
                     <small>${dateStr} à ${heureStr}</small>
                 </div>
-                <button class="btn-pdf">📄 PDF</button>
+                <div class="history-actions">
+                    <button class="btn-pdf" title="PDF">📄</button>
+                    <button class="btn-delete" title="Supprimer">🗑️</button>
+                </div>
             `;
             item.querySelector('.restore').onclick = () => { 
-                if(confirm("Restaurer ?")) {
+                if(confirm("Restaurer ce code ?")) {
                     codeEditor.value = data.content;
                     afficherNotification("Code restauré !");
                 }
             };
-            item.querySelector('.btn-pdf').onclick = () => telechargerPDF(data.content, data.lastBy, `${dateStr} à ${heureStr}`);
+            item.querySelector('.btn-pdf').onclick = (e) => {
+                e.stopPropagation();
+                telechargerPDF(data.content, data.lastBy, `${dateStr} à ${heureStr}`);
+            };
+            item.querySelector('.btn-delete').onclick = (e) => {
+                e.stopPropagation();
+                supprimerSauvegarde(docId, item);
+            };
             historyPanel.appendChild(item);
         });
     }
