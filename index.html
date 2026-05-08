@@ -5,10 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EcoleDirecte</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-    <!-- PDF et Coloration -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
 </head>
@@ -52,10 +50,11 @@
     <section class="editor-container">
         <div class="editor-header">
             <div class="editor-info">
-                <h3 class="editor-title">Python Workspace</h3>
+                <h3 class="editor-title">Thonny</h3>
                 <p id="last-editor" class="editor-subtitle">Chargement...</p>
             </div>
             <div class="file-actions">
+                <input type="text" id="saveName" placeholder="Nom de la version..." class="input-save-name">
                 <button id="saveBtn" class="btn-confirm">Confirmer</button>
                 <button id="historyBtn" class="btn-secondary">Historique</button>
                 <label for="fileInput" class="btn-secondary">Importer .py</label>
@@ -63,7 +62,6 @@
             </div>
         </div>
         <textarea id="codeEditor" spellcheck="false" placeholder="Code collaboratif..."></textarea>
-        <!-- Panneau historique indispensable -->
         <div id="history-panel"></div>
     </section>
 </div>
