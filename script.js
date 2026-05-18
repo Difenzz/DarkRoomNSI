@@ -14,6 +14,7 @@ const db = firebase.firestore();
 let currentUsername = null;
 let currentUserDocId = null;
 
+// Notification Toast
 function afficherNotification(message) {
     const toast = document.createElement('div');
     toast.style.position = 'fixed';
@@ -30,6 +31,7 @@ function afficherNotification(message) {
     setTimeout(() => { toast.remove(); }, 3000);
 }
 
+// Gestion de la Connexion
 async function tenterConnexion() {
     const idField = document.getElementById('loginId');
     const pwdField = document.getElementById('loginPwd');
@@ -41,29 +43,48 @@ async function tenterConnexion() {
         if (!query.empty) {
             currentUsername = id;
             currentUserDocId = query.docs[0].id;
+            
+            // Passage en ligne
             await db.collection("users").doc(currentUserDocId).update({ isOnline: true });
+            
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('app-content').style.display = 'flex';
             document.getElementById('user-display').innerText = "Utilisateur : " + id;
+            
             initChat();
             initCollaborativeEditor();
             initUsersPresence();
         } else {
             document.getElementById('loginError').style.display = 'block';
         }
-    } catch (e) { console.error("Erreur de connexion:", e); }
+    } catch (e) { 
+        console.error("Erreur de connexion:", e); 
+    }
 }
 
+// Écouteurs d'événements pour le Login
 document.getElementById('loginBtn').addEventListener('click', tenterConnexion);
 [document.getElementById('loginId'), document.getElementById('loginPwd')].forEach(input => {
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') tenterConnexion(); });
 });
 
+// Déconnexion volontaire (Bouton Quitter)
 document.getElementById('logoutBtn').addEventListener('click', async () => {
-    if (currentUserDocId) await db.collection("users").doc(currentUserDocId).update({ isOnline: false });
+    if (currentUserDocId) {
+        await db.collection("users").doc(currentUserDocId).update({ isOnline: false });
+    }
     window.location.reload();
 });
 
+// SÉCURITÉ : Déconnexion automatique si fermeture de l'onglet, du navigateur ou reload
+window.addEventListener('beforeunload', () => {
+    if (currentUserDocId) {
+        // Met à jour Firestore juste avant la fermeture de la page
+        db.collection("users").doc(currentUserDocId).update({ isOnline: false });
+    }
+});
+
+// Affichage de la liste des membres et de leur état
 function initUsersPresence() {
     const usersList = document.getElementById('usersList');
     db.collection("users").onSnapshot(snap => {
@@ -78,6 +99,7 @@ function initUsersPresence() {
     });
 }
 
+// Initialisation de la section Chat
 function initChat() {
     const chatBox = document.getElementById('chatBox');
     const chatForm = document.getElementById('chatForm');
@@ -89,6 +111,7 @@ function initChat() {
         const txt = userInput.value.trim();
         if (!txt) return;
 
+        // Commande /clear modifiée pour tout nettoyer (Chat + Code)
         if (txt.toLowerCase() === '/clear') {
             if (confirm("Voulez-vous TOUT supprimer (Chat + Code) ?")) {
                 await codeRef.set({
@@ -115,6 +138,7 @@ function initChat() {
         userInput.value = "";
     });
 
+    // Écoute en temps réel des messages
     db.collection("messages").orderBy("createdAt", "asc").onSnapshot(snap => {
         chatBox.innerHTML = "";
         snap.forEach(doc => {
@@ -122,6 +146,8 @@ function initChat() {
             const div = document.createElement('div');
             let colorClass = m.sender === currentUsername ? 'sent' : 'received';
             let displayName = m.sender;
+            
+            // Attribution des noms et styles selon les rôles du projet
             if (m.sender === "Ghost") { colorClass += " color-ghost"; displayName = "Lorenzo"; }
             else if (m.sender === "Chicky7") { colorClass += " color-chicky"; displayName = "Sabry"; }
             else if (m.sender === "Dev") { colorClass += " color-dev"; displayName = "Enzo"; }
@@ -135,6 +161,7 @@ function initChat() {
     });
 }
 
+// Initialisation de l'éditeur de code collaboratif (Thonny style)
 function initCollaborativeEditor() {
     const codeEditor = document.getElementById('codeEditor');
     const saveBtn = document.getElementById('saveBtn');
@@ -144,11 +171,11 @@ function initCollaborativeEditor() {
     const fileInput = document.getElementById('fileInput');
     const codeRef = db.collection("workspace").doc("shared_code");
 
+    // Importation de fichier local .py
     fileInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
-        // Récupère le nom du fichier et enlève l'extension .py
         const fileName = file.name.replace('.py', '');
         saveNameInput.value = fileName;
 
@@ -166,12 +193,14 @@ function initCollaborativeEditor() {
         reader.readAsText(file);
     });
 
+    // Supprimer une sauvegarde de l'historique
     async function supprimerSauvegarde(docId, itemElement) {
         await db.collection("history").doc(docId).delete();
         itemElement.remove();
         afficherNotification("Sauvegarde supprimée !");
     }
 
+    // Génération et téléchargement du PDF
     function telechargerPDF(contenu, auteurRaw, dateLabel, nomVersion) {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
@@ -227,6 +256,7 @@ function initCollaborativeEditor() {
         doc.save(`Save_${nomVersion || 'brute'}_${dateLabel.replace(/ /g, '_')}.pdf`);
     }
 
+    // Charger l'historique depuis Firebase
     async function chargerHistorique() {
         historyPanel.innerHTML = "<h4>Historique des sauvegardes</h4>";
         const snap = await db.collection("history").orderBy("updatedAt", "desc").limit(10).get();
@@ -253,6 +283,8 @@ function initCollaborativeEditor() {
                     <button class="btn-delete" title="Supprimer">🗑️</button>
                 </div>
             `;
+            
+            // Restaurer le code au clic sur l'élément
             item.querySelector('.restore').onclick = () => { 
                 if(confirm("Restaurer ce code ?")) {
                     codeEditor.value = data.content;
@@ -263,18 +295,24 @@ function initCollaborativeEditor() {
                     });
                 }
             };
+            
+            // Bouton PDF
             item.querySelector('.btn-pdf').onclick = (e) => {
                 e.stopPropagation();
                 telechargerPDF(data.content, data.lastBy, `${dateStr} à ${heureStr}`, data.saveName);
             };
+            
+            // Bouton Supprimer
             item.querySelector('.btn-delete').onclick = (e) => {
                 e.stopPropagation();
                 supprimerSauvegarde(doc.id, item);
             };
+            
             historyPanel.appendChild(item);
         });
     }
 
+    // Synchronisation de la saisie utilisateur
     codeEditor.addEventListener('input', () => {
         codeRef.set({
             content: codeEditor.value,
@@ -283,6 +321,7 @@ function initCollaborativeEditor() {
         });
     });
 
+    // Écoute en temps réel des changements sur le code partagé
     codeRef.onSnapshot(doc => {
         if (doc.exists && document.activeElement !== codeEditor) {
             codeEditor.value = doc.data().content;
@@ -294,6 +333,7 @@ function initCollaborativeEditor() {
         }
     });
 
+    // Bouton de confirmation de sauvegarde de version
     saveBtn.addEventListener('click', async () => {
         const customName = saveNameInput.value.trim() || "Sans Titre";
         const payload = { 
@@ -309,6 +349,7 @@ function initCollaborativeEditor() {
         setTimeout(() => saveBtn.innerText = "Confirmer", 2000);
     });
 
+    // Affichage / Masquage du panneau d'historique
     historyBtn.addEventListener('click', () => {
         const isVisible = historyPanel.style.display === 'block';
         historyPanel.style.display = isVisible ? 'none' : 'block';
